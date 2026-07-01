@@ -41,20 +41,21 @@ CORE  →  вьюхи/запросы  →  7 отчётов  →  FastAPI (JSON)
 
 FastAPI · SQLAlchemy · Alembic · PostgreSQL (Docker) · React (Vite) · Recharts · Mermaid (ERD/BPM/FSM). Опционально Metabase поверх той же БД.
 
-## Структура репозитория (план)
+## Структура репозитория
 
 ```
 test-termosphere/
-├── README.md  AGENTS.md  ASSUMPTIONS.md  DATA_QUALITY.md  AI_USAGE.md
+├── README.md  AGENTS.md  ASSUMPTIONS.md  DATA_QUALITY.md  AI_USAGE.md  dashboard_plan.md
 ├── docs/
 │   ├── architecture.md     # ERD, BPM/FSM, словарь таблиц
 │   └── worklog.md          # живой журнал работы (см. AGENTS.md)
-├── data/                   # исходные данные в CSV
+├── data/                   # исходные CSV (в git не входят, см. «Быстрый старт»)
 ├── db/
-│   ├── schema.sql          # человекочитаемая схема
-│   └── reports.sql         # 7 отчётов
-├── backend/                # FastAPI + SQLAlchemy + Alembic + ETL
-└── frontend/               # React (Vite) + Recharts
+│   ├── schema.sql          # дамп схемы (make schema)
+│   └── reports.sql         # 7 отчётов, генерируется из queries.py (make reports-sql)
+├── backend/                # FastAPI + SQLAlchemy + Alembic + ETL + reports
+│   └── app/{db,core,models,etl,reports,api}/
+└── frontend/               # React (Vite) + Recharts (pages/reports/*, CoreViewer, DataQuality)
 ```
 
 ## Отчёты
@@ -74,21 +75,28 @@ test-termosphere/
 | [AGENTS.md](AGENTS.md) | Правила разработки и документирования (в т.ч. для AI-агента) |
 | [ASSUMPTIONS.md](ASSUMPTIONS.md) | Принятые бизнес-допущения и решения |
 | [DATA_QUALITY.md](DATA_QUALITY.md) | Каталог проблем качества данных и реакция на них |
+| [AI_USAGE.md](AI_USAGE.md) | Как использовали AI: задачи, ручные проверки, где AI ошибался, решения человека |
+| [dashboard_plan.md](dashboard_plan.md) | API и дашборд: эндпоинты, экраны, деплой |
 | [docs/architecture.md](docs/architecture.md) | Модель данных: ERD, BPM/FSM, словарь таблиц |
 | [docs/worklog.md](docs/worklog.md) | Живой журнал: решения, задачи AI, проверки, проблемы |
 
-## Быстрый старт (план)
+## Быстрый старт
 
-Исходные CSV в репозиторий не входят — положи 13 файлов выгрузки в `data/` (см. список таблиц выше), затем:
+Исходные CSV в репозиторий не входят — положи 13 файлов выгрузки в `data/` (см. список таблиц выше). Схема и загрузка данных выполняются с хоста (миграции/ETL), затем поднимается контур в Docker:
 
 ```bash
-make up        # docker: поднять postgres (порт 5435)
+make up        # docker: поднять только postgres (порт 5435)
 make migrate   # alembic upgrade head — создать raw + core (таблицы средствами Python)
 make load      # CSV из data/ → raw, затем transform raw → core
-make api       # FastAPI (uvicorn)
-make web       # React (vite)
+make up-full   # docker: поднять api + web (nginx) поверх наполненной БД
 ```
+
+Порядок важен: `make up-full` на пустой БД поднимет контейнеры, но ручки вернут 500 — сперва `migrate` + `load` (том `pgdata` наполняется один раз и переживает пересборку образов).
+
+Для разработки фронта/бэка без Docker: `make api` (uvicorn, :8010) + `make web` (Vite dev, :5173, проксирует `/api`). Прочее — `make help`; артефакты: `make schema` (дамп схемы), `make reports-sql` (перегенерировать `db/reports.sql`), `make test` (юнит-тесты чистилок).
+
+Публичный стенд закрыт basic-auth (nginx), опубликован за собственным Cloudflare-туннелем; креды и хеш — вне git (`.env` / `deploy/htpasswd`).
 
 ## Статус
 
-Подготовка: зафиксированы архитектура, модель данных, решения и план внедрения (живой контур и деплой — ранней фазой, отчёты — вертикальными срезами). Реализация — по фазам из [AGENTS.md](AGENTS.md).
+Реализованы шаги 0–5 из плана [AGENTS.md](AGENTS.md): каркас → raw → core → transform → живой контур с деплоем → 7 отчётов вертикальными срезами. Числа отчётов сверены с эталонными расчётами (Приложение B), живой контур проверен Playwright (0 JS-ошибок) и опубликован за basic-auth. Финальные документы (этот README, [AI_USAGE.md](AI_USAGE.md), [dashboard_plan.md](dashboard_plan.md), ERD/BPM/FSM в [docs/architecture.md](docs/architecture.md)) — на месте. Опциональный Metabase (шаг 7) в контур не включён.
