@@ -79,14 +79,16 @@ test-termosphere/
 
 ## Быстрый старт (план)
 
+Исходные CSV в репозиторий не входят — положи 13 файлов выгрузки в `data/` (см. список таблиц выше), затем:
+
 ```bash
-make up        # docker: поднять postgres
-make migrate   # alembic upgrade head — создать raw + core
-make load      # CSV → raw, затем transform raw → core
+make up        # docker: поднять postgres (порт 5433)
+make migrate   # alembic upgrade head — создать raw + core (таблицы средствами Python)
+make load      # CSV из data/ → raw, затем transform raw → core
 make api       # FastAPI (uvicorn)
 make web       # React (vite)
 ```
 
 ## Статус
 
-Подготовка: зафиксированы архитектура, модель данных, решения и план внедрения. Реализация — по 9 шагам из [AGENTS.md](AGENTS.md).
+Подготовка: зафиксированы архитектура, модель данных, решения и план внедрения (живой контур и деплой — ранней фазой, отчёты — вертикальными срезами). Реализация — по фазам из [AGENTS.md](AGENTS.md).
