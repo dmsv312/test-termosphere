@@ -1,0 +1,24 @@
+# ТермоСфера — инфраструктура. На шаге «каркас» поднимаем только postgres.
+# api/web добавим на шаге «живой контур» (Фаза 4).
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: termosphere_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-termosphere}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-termosphere}
+      POSTGRES_DB: ${POSTGRES_DB:-termosphere}
+    ports:
+      # локально порты 5433/5434 заняты другими проектами → берём 5435
+      - "${DB_PORT:-5435}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-termosphere} -d ${POSTGRES_DB:-termosphere}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

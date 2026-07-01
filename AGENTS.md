@@ -66,7 +66,7 @@ users, companies, contacts, products, pipeline_stages, sources
 
 | # | Шаг | Результат |
 |---|---|---|
-| 0 | Каркас | docker-compose (postgres:5433), Makefile, скелеты доков, инициализация worklog |
+| 0 | Каркас | docker-compose (postgres:5435), Makefile, скелеты доков, инициализация worklog |
 | 1 | raw-слой | raw-модели (TEXT) + загрузчик CSV → raw (CSV лежат локально в `data/`, в git не коммитим) |
 | 2 | core-слой | core-модели (типы, PK/FK) + `sources` + `data_quality_issues`; миграция Alembic (таблицы — средствами Python) |
 | 3 | transform | чистилки + проход raw → core (дедуп, связи, 3 реакции, лог) |

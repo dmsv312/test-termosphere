@@ -82,7 +82,7 @@ test-termosphere/
 Исходные CSV в репозиторий не входят — положи 13 файлов выгрузки в `data/` (см. список таблиц выше), затем:
 
 ```bash
-make up        # docker: поднять postgres (порт 5433)
+make up        # docker: поднять postgres (порт 5435)
 make migrate   # alembic upgrade head — создать raw + core (таблицы средствами Python)
 make load      # CSV из data/ → raw, затем transform raw → core
 make api       # FastAPI (uvicorn)

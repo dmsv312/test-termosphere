@@ -45,4 +45,17 @@
 
 **ПРОВЕРКА** — Пересчитал дебиторку под новое правило корректировок: D1010=169000, D1005=−8000 (переплата), D1001=66000, D1002=84000 (pending 30000), D1003=0 — сходится с эталонами. Решения приняты до кода, по согласованию с владельцем.
 
+## 2026-07-01 · Шаг 0 — каркас
+
+**AI-ЗАДАЧА** — Сгенерировать каркас: docker-compose (postgres:16-alpine), Makefile, backend-скелет (FastAPI + SQLAlchemy + Alembic; config/session/main), `.env(.example)`.
+
+**ПРОБЛЕМА → РЕШЕНИЕ** — Порты 5433 и 5434 заняты другими локальными проектами (проверено `ss -ltn`). Postgres перевели на **5435**; поправлены README/AGENTS/.env.
+
+**ПРОВЕРКА** (реально запускалось):
+  - `docker compose up -d db` → контейнер `healthy`; `psql` → PostgreSQL 16.14, схема пустая.
+  - `make venv` → зависимости установлены (fastapi/sqlalchemy/alembic/psycopg3/uvicorn).
+  - `app.db.session.engine` → `select 1` = 1 (приложение видит БД).
+  - `alembic current` → env.py грузится, коннект к БД, exit 0 (ревизий пока нет).
+  - `import app.main` + `health()` → `{'status':'ok','db_reachable':True}`.
+
 <!-- Далее — записи по шагам реализации (см. AGENTS.md § План внедрения). -->
