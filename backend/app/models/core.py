@@ -137,7 +137,7 @@ class Deal(Base):
     created_at = Column(TS)
     updated_at = Column(TS)
     closed_at = Column(TS)  # WON без даты → NULL + флаг (не выдумываем)
-    custom_deadline = Column(TS)
+    custom_deadline = Column(Date)  # в данных — дата без времени
     stage_id = Column(String, ForeignKey("pipeline_stages.stage_id"))  # WAIT_CLIENT → NULL+флаг
     manager_id = Column(String, ForeignKey("users.user_id"))  # nullable: без менеджера/сирота
     company_id = Column(String, ForeignKey("companies.company_id"))  # nullable
@@ -171,7 +171,7 @@ class Payment(Base):
     )
     payment_id = Column(String, primary_key=True)
     deal_id = Column(String, ForeignKey("deals.deal_id"), nullable=False)  # PAY005/D9999 → карантин
-    payment_date = Column(TS)
+    payment_date = Column(Date)  # в данных — дата без времени
     amount = Column(MONEY)  # correction может быть отрицательным (легально)
     payment_type = Column(String)  # prepayment | full | correction | unknown(флаг)
     status = Column(String)  # paid | pending
@@ -218,8 +218,8 @@ class ProductionOrder(Base):
     production_order_id = Column(String, primary_key=True)
     deal_id = Column(String, ForeignKey("deals.deal_id"), nullable=False)  # PO004/D9999 → карантин
     created_at = Column(TS)  # PO003 создан раньше сделки → флаг temporal_inconsistency
-    planned_finish_at = Column(TS)
-    actual_finish_at = Column(TS)
+    planned_finish_at = Column(Date)  # в данных — дата без времени
+    actual_finish_at = Column(Date)
     status = Column(String)  # planned | in_progress | done
     workshop = Column(Text)
     has_quality_issue = Column(Boolean, nullable=False, server_default="false")

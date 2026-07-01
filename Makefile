@@ -2,7 +2,7 @@
 PY := backend/.venv/bin/python
 PIP := backend/.venv/bin/pip
 
-.PHONY: help venv up down psql logs migrate revision load api web schema
+.PHONY: help venv up down psql logs migrate revision load transform test api web schema
 
 help:            ## список команд
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-12s %s\n", $$1, $$2}'
@@ -30,8 +30,14 @@ migrate:         ## применить миграции (alembic upgrade head)
 revision:        ## autogenerate ревизию: make revision m="описание"
 	cd backend && .venv/bin/alembic revision --autogenerate -m "$(m)"
 
-load:            ## CSV из data/ -> raw -> core
+load:            ## CSV из data/ -> raw -> core (полный проход)
 	cd backend && .venv/bin/python -m app.etl.run
+
+transform:       ## raw -> core (нормализация, дедуп, лог качества)
+	cd backend && .venv/bin/python -m app.etl.transform
+
+test:            ## юнит-тесты чистилок (pytest)
+	cd backend && .venv/bin/pytest -q
 
 api:             ## FastAPI (Swagger на /docs)
 	cd backend && .venv/bin/uvicorn app.main:app --reload --port 8000
