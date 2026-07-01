@@ -7,9 +7,13 @@ BRIEF.notes.md
 data/*.csv
 data/*.xlsx
 
+# Секреты деплоя — только на хосте
+deploy/htpasswd
+
 # Окружение и сборка
 .env
 .env.*
+!.env.example
 __pycache__/
 *.pyc
 .venv/

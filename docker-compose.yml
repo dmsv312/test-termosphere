@@ -44,6 +44,9 @@ services:
     ports:
       # единственный публичный порт — за него цепляется Cloudflare-туннель
       - "${WEB_PORT:-8090}:80"
+    volumes:
+      # basic-auth: htpasswd монтируется с хоста (в образ не пекётся, не в git)
+      - ./deploy/htpasswd:/etc/nginx/.htpasswd:ro
 
 volumes:
   pgdata:
