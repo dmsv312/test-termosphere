@@ -43,8 +43,8 @@ export default function CoreViewer() {
 
 function TableView({ name }) {
   const state = useAsync(() => api.coreTable(name), [name])
-  if (state.loading) return <Loader />
   if (state.error) return <ErrorBox error={state.error} />
+  if (!state.data) return <Loader /> // лоадер только на первой загрузке; при переключении держим прошлую таблицу
 
   const { label, columns, rows } = state.data
   return (

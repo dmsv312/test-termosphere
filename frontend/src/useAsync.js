@@ -6,7 +6,8 @@ export function useAsync(fn, deps = []) {
   const [state, setState] = useState({ loading: true, error: null, data: null })
   useEffect(() => {
     let alive = true
-    setState({ loading: true, error: null, data: null })
+    // сохраняем прошлые данные на время повторной загрузки — не мигаем спиннером
+    setState((s) => ({ loading: true, error: null, data: s.data }))
     fn()
       .then((data) => alive && setState({ loading: false, error: null, data }))
       .catch((e) => alive && setState({ loading: false, error: String(e.message || e), data: null }))
