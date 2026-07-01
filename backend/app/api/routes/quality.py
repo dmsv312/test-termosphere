@@ -28,7 +28,7 @@ def summary(session: Session = Depends(get_session)) -> dict:
             func.count(),
         )
         .group_by(c.DataQualityIssue.issue_type, c.DataQualityIssue.action)
-        .order_by(c.DataQualityIssue.issue_type)
+        .order_by(c.DataQualityIssue.issue_type, c.DataQualityIssue.action)
         .all()
     )
     by_type = [

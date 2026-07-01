@@ -36,9 +36,9 @@ export default function DataQuality() {
   const summary = useAsync(api.dqSummary, [])
   const issues = useAsync(api.dqIssues, [])
 
-  if (summary.loading || issues.loading) return <Loader />
   if (summary.error) return <ErrorBox error={summary.error} />
   if (issues.error) return <ErrorBox error={issues.error} />
+  if (summary.loading || issues.loading) return <Loader />
 
   const { total, by_action } = summary.data
   const pivot = pivotByType(summary.data.by_type)
