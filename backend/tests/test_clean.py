@@ -72,20 +72,25 @@ def test_parse_date_returns_date():
 # --- norm_phone ---------------------------------------------------------------
 
 def test_norm_phone_leading_8_fixed():
-    assert clean.norm_phone("89170003003") == ("+79170003003", True)
+    assert clean.norm_phone("89170003003") == ("+79170003003", "fixed")
 
 
 def test_norm_phone_pretty_plus7_not_flagged():
     # уже +7 — компактим, но дефектом не считаем
-    assert clean.norm_phone("+7 917 000-10-01") == ("+79170001001", False)
+    assert clean.norm_phone("+7 917 000-10-01") == ("+79170001001", None)
 
 
 def test_norm_phone_unrecognized_kept():
-    assert clean.norm_phone("123") == ("123", False)
+    # не 11-значный РФ-номер → оставляем как есть, помечаем "unrecognized"
+    assert clean.norm_phone("123") == ("123", "unrecognized")
+
+
+def test_norm_phone_extension_unrecognized():
+    assert clean.norm_phone("+7 923 709-19-92 доб.5") == ("+7 923 709-19-92 доб.5", "unrecognized")
 
 
 def test_norm_phone_blank():
-    assert clean.norm_phone("") == (None, False)
+    assert clean.norm_phone("") == (None, None)
 
 
 # --- parse_amount / parse_int / parse_bool / norm_inn -------------------------

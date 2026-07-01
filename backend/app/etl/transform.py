@@ -166,10 +166,14 @@ def _load_contacts(session, issues, company_ids) -> set[str]:
             _issue(issues, "contact", ct.contact_id, "orphan_company", "flagged",
                    f"company_id={ct.company_id} отсутствует → NULL")
             flagged = True
-        phone, phone_fixed = clean.norm_phone(ct.phone)
-        if phone_fixed:
+        phone, phone_status = clean.norm_phone(ct.phone)
+        if phone_status == "fixed":
             _issue(issues, "contact", ct.contact_id, "normalized_phone", "fixed",
                    f"{ct.phone} → {phone}")
+            flagged = True
+        elif phone_status == "unrecognized":
+            _issue(issues, "contact", ct.contact_id, "unnormalized_phone", "flagged",
+                   f"не РФ-формат, оставлен как есть: {ct.phone}")
             flagged = True
         if clean.is_blank(ct.email):
             _issue(issues, "contact", ct.contact_id, "missing_email", "flagged")

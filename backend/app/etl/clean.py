@@ -85,22 +85,25 @@ def parse_date(raw: str | None) -> tuple[date | None, bool]:
     return (dt.date() if dt else None), nonstandard
 
 
-def norm_phone(raw: str | None) -> tuple[str | None, bool]:
-    """(нормализованный телефон | исходное, was_fixed).
+def norm_phone(raw: str | None) -> tuple[str | None, str | None]:
+    """(значение | None, status).
 
-    Приводит 11-значные РФ-номера к виду +7XXXXXXXXXX. was_fixed=True только когда
-    исходная запись была в НЕ +7-формате (например 8XXXXXXXXXX) — косметическую
-    чистку пробелов/дефисов у уже +7-номеров дефектом не считаем.
+    Приводит 11-значные РФ-номера к виду +7XXXXXXXXXX. status:
+      None           — пусто, либо уже +7 (косметическая чистка пробелов/дефисов —
+                       не дефект);
+      "fixed"        — приведён к +7 из иного формата (например 8XXXXXXXXXX);
+      "unrecognized" — не свёлся к 11-значному РФ-номеру (добавочный, 12+ цифр);
+                       хранится как есть (данные не теряем) и помечается transform'ом.
     """
     if is_blank(raw):
-        return None, False
+        return None, None
     s = raw.strip()
     digits = re.sub(r"\D", "", s)
     if len(digits) == 11 and digits[0] == "8":
         digits = "7" + digits[1:]
     if len(digits) == 11 and digits[0] == "7":
-        return "+" + digits, not s.startswith("+7")
-    return s, False  # не смогли распознать — возвращаем как есть, без флага
+        return "+" + digits, (None if s.startswith("+7") else "fixed")
+    return s, "unrecognized"
 
 
 def parse_amount(raw: str | None) -> Decimal | None:
