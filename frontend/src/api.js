@@ -15,4 +15,11 @@ export const api = {
   coreTable: (name) => getJSON(`/api/core/${name}`),
   dqSummary: () => getJSON('/api/data-quality/summary'),
   dqIssues: () => getJSON('/api/data-quality/issues'),
+  // Отчёты (шаг 5)
+  reportFunnel: () => getJSON('/api/reports/funnel'),
+  reportManagers: () => getJSON('/api/reports/managers'),
+  reportReceivables: () => getJSON('/api/reports/receivables'),
+  reportProduction: () => getJSON('/api/reports/production-delays'),
+  reportStale: (nDays) => getJSON(`/api/reports/stale-deals?n_days=${nDays}`),
+  reportSources: () => getJSON('/api/reports/sources'),
 }

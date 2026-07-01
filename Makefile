@@ -2,7 +2,7 @@
 PY := backend/.venv/bin/python
 PIP := backend/.venv/bin/pip
 
-.PHONY: help venv up down psql logs migrate revision load transform test api web schema build up-full down-full logs-app
+.PHONY: help venv up down psql logs migrate revision load transform test api web schema reports-sql build up-full down-full logs-app
 
 help:            ## список команд
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-12s %s\n", $$1, $$2}'
@@ -47,6 +47,9 @@ web:             ## фронт (Vite dev, :5173, проксирует /api на 
 
 schema:          ## снять схему БД в db/schema.sql
 	docker compose exec -T db pg_dump -U termosphere -d termosphere --schema-only > db/schema.sql
+
+reports-sql:     ## сгенерировать db/reports.sql из канонического SQL (queries.py)
+	cd backend && .venv/bin/python -m app.reports.dump_sql
 
 build:           ## собрать образы api + web
 	docker compose build api web

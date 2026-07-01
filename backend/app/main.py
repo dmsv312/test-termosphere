@@ -4,6 +4,7 @@ from sqlalchemy import text
 
 from app.api.routes import core as core_routes
 from app.api.routes import quality as quality_routes
+from app.api.routes import reports as reports_routes
 from app.core.config import settings
 from app.db.session import engine
 
@@ -23,6 +24,7 @@ app.add_middleware(
 
 app.include_router(core_routes.router)
 app.include_router(quality_routes.router)
+app.include_router(reports_routes.router)
 
 
 @app.get("/health")

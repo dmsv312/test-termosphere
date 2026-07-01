@@ -100,6 +100,44 @@ body {
   font-weight: 600;
 }
 
+/* --- Под-навигация раздела «Отчёты» --------------------------------------- */
+
+.subnav {
+  background: #eef2f6;
+  border-bottom: 1px solid var(--border);
+}
+
+.subnav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px 24px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.subtab {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--muted);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13.5px;
+}
+
+.subtab:hover {
+  background: #e2e8f0;
+  color: var(--text);
+}
+
+.subtab.active {
+  background: #fff;
+  border-color: var(--border);
+  color: var(--accent-dark);
+  font-weight: 600;
+}
+
 /* --- Контент -------------------------------------------------------------- */
 
 .content {
@@ -226,6 +264,24 @@ tr.row-flagged {
 }
 tr.row-flagged:hover {
   background: #fdf3b0;
+}
+
+tr.row-won {
+  background: #eafbef;
+}
+tr.row-won:hover {
+  background: #dcf7e5;
+}
+
+table.grid tfoot tr.row-total td {
+  background: #f0f3f6;
+  font-weight: 700;
+  border-top: 2px solid var(--border);
+}
+
+/* Отрицательные суммы (переплата/убыток). */
+.neg {
+  color: var(--quarantined);
 }
 
 /* --- Бейджи реакции ------------------------------------------------------- */

@@ -78,7 +78,7 @@ export default function DataQuality() {
             <Tooltip />
             <Legend />
             {ACTION_SERIES.map((s) => (
-              <Bar key={s.key} dataKey={s.key} stackId="a" name={s.name} fill={s.fill} />
+              <Bar key={s.key} dataKey={s.key} stackId="a" name={s.name} fill={s.fill} isAnimationActive={false} />
             ))}
           </BarChart>
         </ResponsiveContainer>
