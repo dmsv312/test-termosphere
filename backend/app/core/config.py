@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     )
     # Часовой пояс данных выгрузки — фиксируем как справочную константу (см. ASSUMPTIONS).
     data_tz: str = "+05:00"
+    # CORS: в проде фронт ходит через nginx (тот же origin), в dev — через Vite-прокси.
+    # По умолчанию разрешаем всё: контур read-only, только GET.
+    cors_origins: list[str] = ["*"]
 
 
 settings = Settings()

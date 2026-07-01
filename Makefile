@@ -2,7 +2,7 @@
 PY := backend/.venv/bin/python
 PIP := backend/.venv/bin/pip
 
-.PHONY: help venv up down psql logs migrate revision load transform test api web schema
+.PHONY: help venv up down psql logs migrate revision load transform test api web schema build up-full down-full logs-app
 
 help:            ## список команд
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-12s %s\n", $$1, $$2}'
@@ -39,11 +39,23 @@ transform:       ## raw -> core (нормализация, дедуп, лог к
 test:            ## юнит-тесты чистилок (pytest)
 	cd backend && .venv/bin/pytest -q
 
-api:             ## FastAPI (Swagger на /docs)
-	cd backend && .venv/bin/uvicorn app.main:app --reload --port 8000
+api:             ## FastAPI локально (Swagger на /docs); 8000 занят → 8010
+	cd backend && .venv/bin/uvicorn app.main:app --reload --port 8010
 
-web:             ## фронт (Vite) — появится на шаге 4
+web:             ## фронт (Vite dev, :5173, проксирует /api на :8010)
 	cd frontend && npm run dev
 
 schema:          ## снять схему БД в db/schema.sql
 	docker compose exec -T db pg_dump -U termosphere -d termosphere --schema-only > db/schema.sql
+
+build:           ## собрать образы api + web
+	docker compose build api web
+
+up-full:         ## поднять весь контур (db + api + web) в docker
+	docker compose up -d --build
+
+down-full:       ## остановить весь контур
+	docker compose down
+
+logs-app:        ## логи api + web
+	docker compose logs -f api web

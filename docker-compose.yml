@@ -1,5 +1,6 @@
-# ТермоСфера — инфраструктура. На шаге «каркас» поднимаем только postgres.
-# api/web добавим на шаге «живой контур» (Фаза 4).
+# ТермоСфера — инфраструктура. Фаза 4 (живой контур): postgres + api + web.
+# db — источник данных (том сохраняется); api — FastAPI; web — nginx со статикой React,
+# он же проксирует /api на api. Наружу публикуется только web (за него цепляем туннель).
 services:
   db:
     image: postgres:16-alpine
@@ -19,6 +20,30 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  api:
+    build: ./backend
+    container_name: termosphere_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # внутри сети compose БД доступна как db:5432 (не 5435 — это только хостовый маппинг)
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-termosphere}:${POSTGRES_PASSWORD:-termosphere}@db:5432/${POSTGRES_DB:-termosphere}
+    ports:
+      # хостовый порт для отладки/Swagger; в проде наружу не обязателен
+      - "${API_PORT:-8010}:8000"
+
+  web:
+    build: ./frontend
+    container_name: termosphere_web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      # единственный публичный порт — за него цепляется Cloudflare-туннель
+      - "${WEB_PORT:-8090}:80"
 
 volumes:
   pgdata:

@@ -10,3 +10,12 @@ SessionLocal = sessionmaker(
 
 # Единая декларативная база для raw- и core-моделей (добавляются на шагах 1–2).
 Base = declarative_base()
+
+
+def get_session():
+    """FastAPI-зависимость: сессия на запрос, гарантированно закрывается."""
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
