@@ -68,4 +68,22 @@
   - Независимая сверка БД vs CSV (csv-парсер по каждой таблице): все 13 совпали построчно, итого **80 = 80**.
   - Спот-чек «как есть»: `D1010.created_at='14.06.2026 09:20'` и пустая `currency`→NULL сохранены; дубль D1008 (68000/69000) на месте; D1007 `-12000` сохранён; C205 пустые поля→NULL; PAY006 `2026/06/15` / `-5000` сохранены; сирота D9999 присутствует в raw_deal_products.
 
+## 2026-07-01 · Шаг 2 — core-слой (целевая схема)
+
+**AI-ЗАДАЧА** — core-модели SQLAlchemy (настоящие типы, натуральные PK после дедупа, FK между сущностями, CHECK на доменах статусов) + наши добавления `sources` (справочник каналов) и `data_quality_issues` (лог проблем, поля по BRIEF §4: entity/entity_id/issue_type/action/details + detected_at) + `has_quality_issue` на бизнес-строках. Alembic-миграция с сидом справочника `sources`. Без transform — только схема (данные в core придут на шаге 3).
+
+**ПРОВЕРКА (сам, по данным — до кода)** — распределение значений в raw, чтобы CHECK/сид были по факту, а не по памяти: каналы `deals.source` (AVITO/Avito/avito/Авито/Website/website/phone/referral/telegram/yandex_direct) → канон 6 шт. в нижнем регистре `avito, website, yandex_direct, phone, referral, telegram`; стадии — 9 канонических, `WAIT_CLIENT` вне справочника (D1011) → stage_id NULL+флаг; домены: payments.status∈{paid,pending}, type∈{prepayment,full,correction,unknown}; production∈{planned,in_progress,done}; shipments∈{planned,shipped}; activities.type∈{call,email,task}.
+
+**РЕШЕНИЕ** — В `deals` храним `expected_amount` (оценка из карточки, честный факт), а гибрид-сумму `COALESCE(Σпозиций, expected_amount)` считаем в отчётах (уточняет псевдокод BRIEF §6, где поле называлось `amount`). Причина: не запекать производную величину в базовую таблицу.
+
+**РЕШЕНИЕ** — `data_quality_issues`: имена полей взяты из BRIEF §4 (`entity/entity_id/details`), а не из свободной чатовой формулировки (`table_name/row_key/raw_value`) — это та же согласованная схема; исходное «грязное» значение кладём в `details`. Добавлено неломающее `detected_at default now()`.
+
+**РЕШЕНИЕ** — Сид `sources` — внутри Alembic-миграции (`op.bulk_insert`, без импорта app-моделей), чтобы `alembic upgrade head` сразу давал заполненный справочник (страховка «схема поднята = справочник готов»). `pipeline_stages` не сидируем — это реальные данные Bitrix, грузятся из CSV на шаге transform.
+
+**ПРОВЕРКА (реально запускалось):**
+  - `alembic upgrade head` → создано 15 core-таблиц; ревизия `69c662503046 (head)`.
+  - Обратимость: `alembic downgrade -1` → `upgrade head` без ошибок.
+  - В БД: 15 core-таблиц, **19 FK**, 6 именованных CHECK (dqi_action, payment_type, payment_status, activity_type, production_status, shipment_status). `sources` = 6 строк, коды в нижнем регистре.
+  - Ограничения работают: FK отклонил `deal_products` на несуществующую сделку; CHECK отклонил `payments.status='weird'`; сделка с отрицательной суммой (бизнес-сигнал, `has_quality_issue=true`) — прошла. Тестовые строки удалены/откатились, core-таблицы пусты (кроме сида).
+
 <!-- Далее — записи по шагам реализации (см. AGENTS.md § План внедрения). -->
