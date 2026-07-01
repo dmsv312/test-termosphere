@@ -2,7 +2,7 @@
 PY := backend/.venv/bin/python
 PIP := backend/.venv/bin/pip
 
-.PHONY: help venv up down psql logs migrate revision load transform test api web schema reports-sql build up-full down-full logs-app
+.PHONY: help venv up down psql logs migrate revision load transform test api web schema reports-sql build up-full down-full logs-app bi-up bi-provision bi-down bi-logs
 
 help:            ## список команд
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-12s %s\n", $$1, $$2}'
@@ -57,8 +57,21 @@ build:           ## собрать образы api + web
 up-full:         ## поднять весь контур (db + api + web) в docker
 	docker compose up -d --build
 
-down-full:       ## остановить весь контур
-	docker compose down
+down-full:       ## остановить весь контур (включая bi, если поднят) + удалить сеть
+	docker compose --profile bi down
 
 logs-app:        ## логи api + web
 	docker compose logs -f api web
+
+# --- Шаг 7: Metabase (BI, профиль bi) ---
+bi-up:           ## поднять Metabase-контур (metabase_db + metabase + прокси)
+	docker compose --profile bi up -d metabase_db metabase metabase_proxy
+
+bi-provision:    ## авто-настройка Metabase (admin + источник + вопросы + дашборд); идемпотентно
+	node --env-file=.env scripts/metabase-provision.mjs
+
+bi-down:         ## остановить Metabase-контур
+	docker compose --profile bi rm -sf metabase_proxy metabase metabase_db
+
+bi-logs:         ## логи Metabase
+	docker compose --profile bi logs -f metabase
