@@ -38,7 +38,7 @@ export default function App() {
           <span className="brand-mark">ТС</span>
           <div>
             <div className="brand-title">ТермоСфера — аналитический контур</div>
-            <div className="brand-sub">Bitrix24 → PostgreSQL → нормализация (raw→core) → отчёты</div>
+            <div className="brand-sub">Аналитика продаж и производства по выгрузке из CRM</div>
           </div>
         </div>
         <nav className="tabs">

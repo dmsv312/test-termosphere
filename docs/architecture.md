@@ -40,6 +40,10 @@ CSV  →  RAW (все колонки TEXT, без ограничений, сур
 
 ## ER-модель (ERD)
 
+Диаграмма core-слоя с ключевыми атрибутами (PK/FK и значимые поля). Полная схема
+со всеми колонками и ограничениями — в [db/schema.sql](../db/schema.sql). Деньги —
+`decimal`, ИНН — `string` (ведущие нули), даты выгрузки — `date`/`datetime` (+05:00).
+
 ```mermaid
 erDiagram
     companies      ||--o{ contacts          : "имеет"
@@ -50,12 +54,135 @@ erDiagram
     sources        ||--o{ deals             : "канал"
     deals          ||--o{ deal_products     : "позиции"
     products       ||--o{ deal_products     : "товар"
+    products       ||--o{ products          : "дубль→канон"
     deals          ||--o{ payments          : "оплаты"
     deals          ||--o{ stage_history     : "переходы"
     deals          ||--o{ activities        : "активности"
     deals          ||--o{ production_orders : "производство"
     deals          ||--o{ shipments         : "отгрузки"
     sources        ||--o{ marketing_costs   : "затраты"
+
+    sources {
+        int    id           PK
+        string code         UK "avito, website, ..."
+        string name
+    }
+    users {
+        string user_id      PK
+        string name
+        string role         "sales_manager / production_manager / director"
+        bool   active
+        string email
+    }
+    companies {
+        string company_id   PK
+        string name
+        string inn          "строка: ведущие нули значимы"
+        string city
+        string industry
+    }
+    contacts {
+        string contact_id   PK
+        string company_id   FK "nullable: сирота → NULL + флаг"
+        string name
+        string phone        "нормализован +7XXXXXXXXXX"
+        string email
+    }
+    products {
+        string product_id   PK
+        string sku
+        string name
+        decimal cost_price  "себестоимость → маржа"
+        bool   is_active
+        string canonical_id FK "дубль по SKU → канонический товар"
+    }
+    pipeline_stages {
+        string stage_id     PK
+        string stage_name
+        int    sort_order
+        bool   is_final
+        bool   is_success
+    }
+    deals {
+        string deal_id      PK "после дедупа (max updated_at)"
+        string title
+        datetime created_at
+        datetime updated_at
+        datetime closed_at  "WON без даты → NULL + флаг"
+        date   custom_deadline
+        string stage_id     FK "WAIT_CLIENT → NULL + флаг"
+        string manager_id   FK "nullable"
+        string company_id   FK "nullable"
+        string contact_id   FK "nullable"
+        int    source_id    FK "нормализованный канал"
+        decimal expected_amount "оценка из карточки; гибрид-сумма — в отчётах"
+        string currency     "пусто → RUB + флаг"
+        bool   has_quality_issue
+    }
+    deal_products {
+        int    id           PK "суррогат"
+        string deal_id      FK "сирота → карантин"
+        string product_id   FK "PR999 → карантин"
+        decimal quantity
+        decimal unit_price
+        decimal discount    "абсолютные рубли"
+    }
+    payments {
+        string payment_id   PK
+        string deal_id      FK "D9999 → карантин"
+        date   payment_date
+        decimal amount      "correction может быть < 0 (легально)"
+        string payment_type "prepayment / full / correction / unknown"
+        string status       "paid / pending"
+    }
+    stage_history {
+        string event_id     PK
+        string deal_id      FK "D1012 → карантин"
+        string old_stage_id FK
+        string new_stage_id FK
+        datetime changed_at
+        string changed_by_id FK
+    }
+    activities {
+        string activity_id  PK
+        string deal_id      FK
+        string activity_type "call / email / task"
+        bool   completed
+        datetime deadline_at
+        datetime completed_at
+    }
+    production_orders {
+        string production_order_id PK
+        string deal_id      FK
+        datetime created_at "раньше сделки → флаг temporal_inconsistency"
+        date   planned_finish_at
+        date   actual_finish_at
+        string status       "planned / in_progress / done"
+        string workshop
+    }
+    shipments {
+        string shipment_id  PK
+        string deal_id      FK
+        date   planned_date
+        date   actual_date
+        string status       "planned / shipped"
+    }
+    marketing_costs {
+        int    id           PK "суррогат"
+        date   cost_date
+        int    source_id    FK "нормализованный канал"
+        string campaign
+        decimal cost_amount
+    }
+    data_quality_issues {
+        int    id           PK
+        string entity       "deal, payment, ..."
+        string entity_id    "натуральный ключ проблемной строки"
+        string issue_type   "negative_amount, orphan_deal, ..."
+        string action       "fixed / quarantined / flagged"
+        string details
+        datetime detected_at
+    }
 ```
 
 ## FSM — автомат стадий сделки

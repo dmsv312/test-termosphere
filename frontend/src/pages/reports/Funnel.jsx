@@ -20,16 +20,32 @@ function barColor(row) {
   return '#0969da'
 }
 
+// Округляем ось Y до ровных значений (иначе авто-домен даёт «379,05к» и т.п.).
+// Шаг подбираем под размах; нижняя граница = 0 либо ровный отрицательный (грязь).
+function yAxis(values) {
+  const max = Math.max(0, ...values)
+  const min = Math.min(0, ...values)
+  const step = max - min > 400000 ? 100000 : 50000
+  const lo = Math.floor(min / step) * step
+  const hi = Math.ceil(max / step) * step
+  const ticks = []
+  for (let t = lo; t <= hi + 1; t += step) ticks.push(t)
+  return { domain: [lo, hi], ticks }
+}
+
+const yTick = (v) => (v === 0 ? '0' : (v / 1000).toLocaleString('ru-RU') + 'к')
+
 export default function Funnel() {
   const state = useAsync(api.reportFunnel, [])
   return (
     <ReportView
       title="Воронка продаж"
-      lead="Количество сделок и их сумма по стадиям. Сумма — гибрид: по позициям сделки, а где позиций нет — оценка из карточки. Видно, на каких стадиях «висят» деньги."
+      lead="Сколько сделок и на какую сумму находится на каждой стадии воронки. Сумму берём по позициям сделки, а если позиций нет — оценку из карточки. Сразу видно, где скапливаются деньги."
       state={state}
     >
       {(data) => {
         const chart = data.rows.map((r) => ({ ...r, amountNum: Number(r.amount) }))
+        const y = yAxis(chart.map((r) => r.amountNum))
         return (
           <>
             <div className="panel">
@@ -45,12 +61,7 @@ export default function Funnel() {
                     height={72}
                     tick={{ fontSize: 11 }}
                   />
-                  <YAxis
-                    // низ шкалы — 0 (или чуть ниже, если есть отрицательная сумма из грязных данных),
-                    // а не «красивое» -125к: не раздуваем пустую зону под нулём
-                    domain={([min, max]) => [Math.min(0, min) * 1.1, max * 1.05]}
-                    tickFormatter={(v) => (v / 1000).toLocaleString('ru-RU') + 'к'}
-                  />
+                  <YAxis domain={y.domain} ticks={y.ticks} tickFormatter={yTick} />
                   <Tooltip formatter={(v) => money(v)} />
                   {/* нулевая линия = визуальная базовая ось, от неё растут столбцы */}
                   <ReferenceLine y={0} stroke="#8a8f98" />
@@ -61,10 +72,15 @@ export default function Funnel() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+              <div className="chart-legend">
+                <span><i style={{ background: '#2da44e' }} /> Выиграно</span>
+                <span><i style={{ background: '#0969da' }} /> В работе</span>
+                <span><i style={{ background: '#cf222e' }} /> Проиграно</span>
+              </div>
             </div>
 
             <div className="panel">
-              <div className="panel-title">По стадиям</div>
+              <div className="panel-title">Детально по стадиям</div>
               <div className="table-wrap">
                 <table className="grid">
                   <thead>

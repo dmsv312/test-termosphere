@@ -48,7 +48,7 @@ class Source(Base):
 
 
 class DataQualityIssue(Base):
-    """Лог всех найденных проблем качества (поля — по BRIEF §4)."""
+    """Лог всех найденных проблем качества (поля — см. DATA_QUALITY.md)."""
 
     __tablename__ = "data_quality_issues"
     __table_args__ = (

@@ -2,7 +2,7 @@
 PY := backend/.venv/bin/python
 PIP := backend/.venv/bin/pip
 
-.PHONY: help venv up down psql logs migrate revision load transform test api web schema reports-sql build up-full down-full logs-app bi-up bi-provision bi-down bi-logs
+.PHONY: help venv up down psql logs migrate revision load transform test api web schema reports-sql openapi build up-full down-full logs-app bi-up bi-provision bi-down bi-logs
 
 help:            ## список команд
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-12s %s\n", $$1, $$2}'
@@ -12,8 +12,8 @@ venv:            ## создать venv и поставить зависимос
 	$(PIP) install -U pip
 	$(PIP) install -r backend/requirements.txt
 
-up:              ## поднять postgres (порт 5435)
-	docker compose up -d db
+up:              ## поднять postgres (порт 5435) и дождаться готовности (healthcheck)
+	docker compose up -d --wait db
 
 down:            ## остановить контейнеры
 	docker compose down
@@ -50,6 +50,9 @@ schema:          ## снять схему БД в db/schema.sql
 
 reports-sql:     ## сгенерировать db/reports.sql из канонического SQL (queries.py)
 	cd backend && .venv/bin/python -m app.reports.dump_sql
+
+openapi:         ## выгрузить OpenAPI-схему в docs/openapi.json
+	cd backend && .venv/bin/python -m app.api.dump_openapi
 
 build:           ## собрать образы api + web
 	docker compose build api web

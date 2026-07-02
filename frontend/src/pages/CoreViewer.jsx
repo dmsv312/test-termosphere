@@ -53,7 +53,7 @@ function TableView({ name }) {
         {label} <span className="muted mono">({name})</span>
       </h1>
       <p className="muted page-lead">
-        Строк: {rows.length}. Строки с бизнес-сигналом подсвечены (флаг качества).
+        Строк: {rows.length}. Подсвечены строки с пометкой качества.
       </p>
       <div className="table-wrap">
         <table className="grid">

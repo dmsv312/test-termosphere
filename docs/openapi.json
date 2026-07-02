@@ -1,0 +1,384 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ТермоСфера — аналитический контур",
+    "description": "CSV → PostgreSQL → нормализация (raw→core) → отчёты → API/дашборд",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/core/tables": {
+      "get": {
+        "tags": [
+          "core"
+        ],
+        "summary": "List Tables",
+        "description": "Список core-таблиц с числом строк — для навигации по витрине.",
+        "operationId": "list_tables_api_core_tables_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response List Tables Api Core Tables Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/core/{table}": {
+      "get": {
+        "tags": [
+          "core"
+        ],
+        "summary": "Get Table",
+        "description": "Строки одной core-таблицы (по белому списку), отсортированные по PK.\n\nДанных мало (десятки строк) — отдаём как есть; `limit` — страховка.",
+        "operationId": "get_table_api_core__table__get",
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Table"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 1,
+              "default": 500,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Table Api Core  Table  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/data-quality/summary": {
+      "get": {
+        "tags": [
+          "data-quality"
+        ],
+        "summary": "Summary",
+        "description": "Агрегат: всего проблем, разбивка по реакции и по типу × реакции.",
+        "operationId": "summary_api_data_quality_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Summary Api Data Quality Summary Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/data-quality/issues": {
+      "get": {
+        "tags": [
+          "data-quality"
+        ],
+        "summary": "Issues",
+        "description": "Полный список проблем (все строки лога) — для детальной таблицы.",
+        "operationId": "issues_api_data_quality_issues_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response Issues Api Data Quality Issues Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/funnel": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Funnel",
+        "description": "Отчёт 1. Воронка: сделки и сумма (гибрид) по стадиям.",
+        "operationId": "funnel_api_reports_funnel_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Funnel Api Reports Funnel Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/managers": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Managers",
+        "description": "Отчёт 2. Продажи и маржа по менеджерам (по WON) + SHIPPED отдельной пометкой.",
+        "operationId": "managers_api_reports_managers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Managers Api Reports Managers Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/receivables": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Receivables",
+        "description": "Отчёт 3. Дебиторка: сумма / оплачено / в ожидании / корректировка / остаток.",
+        "operationId": "receivables_api_reports_receivables_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Receivables Api Reports Receivables Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/production-delays": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Production Delays",
+        "description": "Отчёт 4. Производственные заказы с задержкой > 5 дней.",
+        "operationId": "production_delays_api_reports_production_delays_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Production Delays Api Reports Production Delays Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/stale-deals": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Stale Deals",
+        "description": "Отчёт 5. Живые сделки без активности более N дней (по умолчанию N=14).",
+        "operationId": "stale_deals_api_reports_stale_deals_get",
+        "parameters": [
+          {
+            "name": "n_days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 3650,
+              "minimum": 0,
+              "default": 14,
+              "title": "N Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Stale Deals Api Reports Stale Deals Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/sources": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Sources",
+        "description": "Отчёт 6. Источники: выручка/маржа по WON, затраты и ROMI (или «нет затрат»).",
+        "operationId": "sources_api_reports_sources_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Sources Api Reports Sources Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "description": "Живость API и соединение с БД (используется для проверки каркаса).",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

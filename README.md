@@ -77,32 +77,74 @@ test-termosphere/
 | [DATA_QUALITY.md](DATA_QUALITY.md) | Каталог проблем качества данных и реакция на них |
 | [AI_USAGE.md](AI_USAGE.md) | Как использовали AI: задачи, ручные проверки, где AI ошибался, решения человека |
 | [dashboard_plan.md](dashboard_plan.md) | API и дашборд: эндпоинты, экраны, деплой |
-| [docs/architecture.md](docs/architecture.md) | Модель данных: ERD, BPM/FSM, словарь таблиц |
+| [docs/api-contract.md](docs/api-contract.md) | Контракт REST API: эндпоинты, параметры, форма ответа, примеры (+ машинная схема [openapi.json](docs/openapi.json)) |
+| [docs/architecture.md](docs/architecture.md) | Модель данных: ERD (с атрибутами), BPM/FSM, словарь таблиц |
 | [docs/worklog.md](docs/worklog.md) | Живой журнал: решения, задачи AI, проверки, проблемы |
 
-## Быстрый старт
+## Быстрый старт (с нуля)
 
-Исходные CSV в репозиторий не входят — положи 13 файлов выгрузки в `data/` (см. список таблиц выше). Схема и загрузка данных выполняются с хоста (миграции/ETL), затем поднимается контур в Docker:
+Что нужно на машине: **Docker + Docker Compose, Python 3.12+, Node 18+ / npm, make** (для шага B полного контура ещё `openssl` — генерация хеша пароля).
 
-```bash
-make up        # docker: поднять только postgres (порт 5435)
-make migrate   # alembic upgrade head — создать raw + core (таблицы средствами Python)
-make load      # CSV из data/ → raw, затем transform raw → core
-make up-full   # docker: поднять api + web (nginx) поверх наполненной БД
+### 1. Данные
+
+Исходные CSV в репозиторий намеренно не входят (`data/*.csv` в `.gitignore`) — это тестовая выгрузка, после загрузки она живёт в БД. Возьми 13 листов из Google-таблицы, указанной в `Тестовое задание .pdf`, выгрузи каждый в CSV и положи в `data/` под именем `Таблица выгрузки Битрикс - <таблица>.csv` — загрузчик ищет файлы строго по этому шаблону. Нужны все 13:
+
+```
+users · companies · contacts · products · pipeline_stages · deals · deal_products
+payments · stage_history · activities · production_orders · shipments · marketing_costs
 ```
 
-Порядок важен: `make up-full` на пустой БД поднимет контейнеры, но ручки вернут 500 — сперва `migrate` + `load` (том `pgdata` наполняется один раз и переживает пересборку образов).
+### 2. Окружение
 
-Для разработки фронта/бэка без Docker: `make api` (uvicorn, :8010) + `make web` (Vite dev, :5173, проксирует `/api`). Прочее — `make help`; артефакты: `make schema` (дамп схемы), `make reports-sql` (перегенерировать `db/reports.sql`), `make test` (юнит-тесты чистилок).
+```bash
+cp .env.example .env      # значения по умолчанию годятся для локального запуска
+```
+
+### 3. Развернуть и загрузить данные
+
+```bash
+make venv       # создать backend/.venv и поставить зависимости (Python)
+make up         # docker: поднять только postgres (порт 5435)
+make migrate    # alembic upgrade head — создать raw + core (типы, PK/FK/CHECK)
+make load       # CSV из data/ → raw, затем нормализация raw → core
+```
+
+`make load` в конце печатает сводку — на эталонной выгрузке это `core.deals: 11` и `data_quality_issues: 29 (fixed=9, quarantined=8, flagged=12)` (всего 80 строк в raw). Если увидел эти числа — пайплайн отработал верно.
+
+### 4. Открыть
+
+Есть два пути.
+
+**A. Дев-режим (быстрее всего посмотреть, без пароля):**
+
+```bash
+make api        # FastAPI + Swagger на http://localhost:8010/docs
+make web        # дашборд на http://localhost:5173 (проксирует /api на :8010)
+```
+
+**B. Полный контур в Docker (как в проде, за basic-auth):**
+
+```bash
+# basic-auth обязателен (nginx). Создай файл логина/пароля ОДИН раз:
+mkdir -p deploy && printf '%s:%s\n' "termosphere" "$(openssl passwd -apr1 'ВАШ_ПАРОЛЬ')" > deploy/htpasswd
+make up-full    # docker: собрать и поднять api + web (nginx) поверх наполненной БД
+# дашборд на http://localhost:8090 (логин termosphere / ВАШ_ПАРОЛЬ)
+```
+
+Порядок важен: `make up-full` на пустой БД поднимет контейнеры, но ручки вернут 500 — сперва `migrate` + `load` (том `pgdata` наполняется один раз и переживает пересборку образов). Без файла `deploy/htpasswd` контейнер `web` стартует, но nginx не может прочитать файл паролей и отдаёт 500 на запросы — поэтому создай его до `up-full` (шаг B выше).
+
+### Прочее
+
+`make help` — все команды. Артефакты: `make schema` (дамп схемы БД), `make reports-sql` (перегенерировать `db/reports.sql` из `queries.py`), `make openapi` (перегенерировать `docs/openapi.json`), `make test` (юнит-тесты чистилок).
 
 Опциональный BI-бонус (Metabase поверх той же БД, docker-профиль `bi`, по умолчанию не поднимается):
 
 ```bash
-make bi-up          # metabase_db + metabase + nginx-прокси с basic-auth
+make bi-up          # metabase_db + metabase + nginx-прокси (reverse-proxy)
 make bi-provision   # авто-настройка: admin + источник termosphere + 7 вопросов + дашборд
 ```
 
-Публичный стенд закрыт basic-auth (nginx), опубликован за собственным Cloudflare-туннелем; креды и хеш — вне git (`.env` / `deploy/htpasswd`).
+Публикация — за собственным Cloudflare-туннелем. Авторизация различается по хостнейму: витрина (`termosphere.dm312sv.online`) закрыта basic-auth на nginx (креды/хеш вне git: `.env` / `deploy/htpasswd`); BI (`bi.dm312sv.online`) — за собственным логином Metabase (email+пароль), без отдельного basic-auth, то есть один запрос авторизации. Сам Metabase напрямую наружу не торчит.
 
 ## Статус
 
